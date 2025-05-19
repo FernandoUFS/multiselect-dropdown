@@ -12,6 +12,7 @@ class _Dropdown<T> extends StatelessWidget {
     required this.searchDecoration,
     required this.maxSelections,
     required this.items,
+    required this.selectedItems,
     required this.onItemTap,
     Key? key,
     this.onSearchChange,
@@ -47,6 +48,9 @@ class _Dropdown<T> extends StatelessWidget {
   /// The list of dropdown items.
   final List<DropdownItem<T>> items;
 
+  /// The list of selected items.
+  final List<DropdownItem<T>> selectedItems;
+
   /// The callback when an item is tapped.
   final ValueChanged<DropdownItem<T>> onItemTap;
 
@@ -56,7 +60,7 @@ class _Dropdown<T> extends StatelessWidget {
   /// Whether the selection is single.
   final bool singleSelect;
 
-  int get _selectedCount => items.where((element) => element.selected).length;
+  int get _selectedCount => selectedItems.length;
 
   static const Map<ShortcutActivator, Intent> _webShortcuts =
       <ShortcutActivator, Intent>{
@@ -65,6 +69,10 @@ class _Dropdown<T> extends StatelessWidget {
     SingleActivator(LogicalKeyboardKey.arrowUp):
         DirectionalFocusIntent(TraversalDirection.up),
   };
+
+  bool isSelected(DropdownItem<T> item) {
+    return selectedItems.any((e) => e.value == item.value);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -101,12 +109,21 @@ class _Dropdown<T> extends StatelessWidget {
               if (decoration.header != null)
                 Flexible(child: decoration.header!),
               Flexible(
-                child: ListView.separated(
-                  separatorBuilder: (_, __) =>
-                      itemSeparator ?? const SizedBox.shrink(),
-                  shrinkWrap: true,
-                  itemCount: items.length,
-                  itemBuilder: (_, int index) => _buildOption(index, theme),
+                child: MediaQuery.removePadding(
+                  context: context,
+                  removeTop: true,
+                  removeBottom: true,
+                  removeLeft: true,
+                  removeRight: true,
+                  child: PrimaryScrollController.none(
+                    child: ListView.separated(
+                      separatorBuilder: (_, __) =>
+                          itemSeparator ?? const SizedBox.shrink(),
+                      shrinkWrap: true,
+                      itemCount: items.length,
+                      itemBuilder: (_, int index) => _buildOption(index, theme),
+                    ),
+                  ),
                 ),
               ),
               if (items.isEmpty && searchEnabled)
@@ -137,7 +154,8 @@ class _Dropdown<T> extends StatelessWidget {
     final option = items[index];
 
     if (itemBuilder != null) {
-      return itemBuilder!(option, index, () => onItemTap(option));
+      return itemBuilder!(
+          option, index, () => onItemTap(option), isSelected(option));
     }
 
     final disabledColor = dropdownItemDecoration.disabledBackgroundColor ??
@@ -145,13 +163,13 @@ class _Dropdown<T> extends StatelessWidget {
 
     final tileColor = option.disabled
         ? disabledColor
-        : option.selected
+        : isSelected(option)
             ? dropdownItemDecoration.selectedBackgroundColor
             : dropdownItemDecoration.backgroundColor;
 
     final trailing = option.disabled
         ? dropdownItemDecoration.disabledIcon
-        : option.selected
+        : isSelected(option)
             ? dropdownItemDecoration.selectedIcon
             : null;
 
@@ -162,7 +180,7 @@ class _Dropdown<T> extends StatelessWidget {
         dense: true,
         autofocus: true,
         enabled: !option.disabled,
-        selected: option.selected,
+        selected: isSelected(option),
         visualDensity: VisualDensity.adaptivePlatformDensity,
         focusColor: dropdownItemDecoration.backgroundColor?.withAlpha(100),
         selectedColor: dropdownItemDecoration.selectedTextColor ??
@@ -186,8 +204,8 @@ class _Dropdown<T> extends StatelessWidget {
 
   void _onSearchChange(String value) => onSearchChange?.call(value);
 
-  bool _reachedMaxSelection(DropdownItem<dynamic> option) {
-    return !option.selected &&
+  bool _reachedMaxSelection(DropdownItem<T> option) {
+    return !isSelected(option) &&
         maxSelections > 0 &&
         _selectedCount >= maxSelections;
   }
