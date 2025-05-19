@@ -28,7 +28,8 @@ typedef OnSelectionChanged<T> = void Function(List<T> selectedItems);
 typedef OnSearchChanged = ValueChanged<String>;
 
 /// typedef for the selected item builder.
-typedef SelectedItemBuilder<T> = Widget Function(DropdownItem<T> item);
+typedef SelectedItemBuilder<T> = Widget Function(
+    DropdownItem<T> item, void Function()? deleteCallback);
 
 /// typedef for the future request.
 typedef FutureRequest<T> = Future<List<DropdownItem<T>>> Function();
@@ -572,7 +573,9 @@ class _MultiDropdownState<T extends Object> extends State<MultiDropdown<T>> {
     final selectedOptions = _dropdownController.selectedItems;
 
     if (widget.singleSelect) {
-      return Text(selectedOptions.first.label);
+      return (widget.selectedItemBuilder != null)
+          ? widget.selectedItemBuilder!(selectedOptions.first, null)
+          : Text(selectedOptions.first.label);
     }
 
     return _buildSelectedItems(selectedOptions);
@@ -581,17 +584,6 @@ class _MultiDropdownState<T extends Object> extends State<MultiDropdown<T>> {
   /// Build the selected items for the dropdown.
   Widget _buildSelectedItems(List<DropdownItem<T>> selectedOptions) {
     final chipDecoration = widget.chipDecoration;
-
-    if (widget.selectedItemBuilder != null) {
-      return Wrap(
-        spacing: chipDecoration.spacing,
-        runSpacing: chipDecoration.runSpacing,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: selectedOptions
-            .map((option) => widget.selectedItemBuilder!(option))
-            .toList(),
-      );
-    }
 
     if (chipDecoration.wrap) {
       return Wrap(
@@ -619,7 +611,7 @@ class _MultiDropdownState<T extends Object> extends State<MultiDropdown<T>> {
   }
 
   Widget _buildChip(
-    DropdownItem<dynamic> option,
+    DropdownItem<T> option,
     ChipDecoration chipDecoration,
   ) {
     return Container(
@@ -631,25 +623,31 @@ class _MultiDropdownState<T extends Object> extends State<MultiDropdown<T>> {
         border: chipDecoration.border,
       ),
       padding: chipDecoration.padding,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(option.label, style: chipDecoration.labelStyle),
-          const SizedBox(width: 4),
-          InkWell(
-            onTap: () {
+      child: widget.selectedItemBuilder != null
+          ? widget.selectedItemBuilder!(option, () {
               _dropdownController
                   .unselectWhere((element) => element.label == option.label);
-            },
-            child: SizedBox(
-              width: 16,
-              height: 16,
-              child: chipDecoration.deleteIcon ??
-                  const Icon(Icons.close, size: 16),
+            })
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(option.label, style: chipDecoration.labelStyle),
+                const SizedBox(width: 4),
+                InkWell(
+                  onTap: () {
+                    _dropdownController.unselectWhere(
+                      (element) => element.label == option.label,
+                    );
+                  },
+                  child: SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: chipDecoration.deleteIcon ??
+                        const Icon(Icons.close, size: 16),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
     );
   }
 
