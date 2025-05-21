@@ -115,6 +115,7 @@ class DropdownDecoration {
     this.borderRadius = const BorderRadius.all(Radius.circular(12)),
     this.footer,
     this.header,
+    this.noItemsFoundWidget,
   });
 
   /// The background color of the dropdown.
@@ -137,6 +138,9 @@ class DropdownDecoration {
 
   /// The custom header widget to display at the top of the dropdown.
   final Widget? header;
+
+  /// The custom widget to display when no items are found in the dropdown.
+  final Widget? noItemsFoundWidget;
 }
 
 /// Represents the decoration for the dropdown field.
