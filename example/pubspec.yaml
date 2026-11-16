@@ -39,6 +39,8 @@ dependencies:
     path: ../
   go_router: ^14.2.1
 
+  cupertino_ui: any
+  material_ui: any
 dev_dependencies:
   flutter_test:
     sdk: flutter
